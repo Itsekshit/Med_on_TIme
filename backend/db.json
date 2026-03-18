@@ -1,0 +1,31 @@
+{
+  "stores": [
+    {
+      "id": 1,
+      "name": "Ekshit  Pharmacy",
+      "distance": 1.2,
+      "medicines": [
+        { "id": 1, "name": "Paracetamol", "price": 20 },
+        { "id": 2, "name": "Crocin", "price": 25 }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Gupta Medical Store",
+      "distance": 0.8,
+      "medicines": [
+        { "id": 1, "name": "Paracetamol", "price": 18 },
+        { "id": 2, "name": "Cough Syrup", "price": 60 }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Sharma Medicos",
+      "distance": 2.5,
+      "medicines": [
+        { "id": 1, "name": "Dolo 650", "price": 28 },
+        { "id": 2, "name": "Vitamin C", "price": 50 }
+      ]
+    }
+  ]
+}
