@@ -11,7 +11,7 @@
     },
     {
       "id": 2,
-      "name": "Gupta Medical Store",
+      "name": "Rahul  Medical Store",
       "distance": 0.8,
       "medicines": [
         { "id": 1, "name": "Paracetamol", "price": 18 },

@@ -4,5 +4,74 @@ generator client {
 
 datasource db {
   provider = "mysql"
- 
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("CUSTOMER")
+  createdAt DateTime @default(now())
+
+  stores Store[]
+  orders Order[]
+}
+
+model Store {
+  id           Int      @id @default(autoincrement())
+  name         String
+  address      String
+  pincode      String
+  deliveryTime Int
+  createdAt    DateTime @default(now())
+
+  ownerId Int?
+  owner   User? @relation(fields: [ownerId], references: [id])
+
+  products Product[]
+  orders   Order[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  category    String
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  storeId Int
+  store   Store @relation(fields: [storeId], references: [id])
+
+  orderItems OrderItem[]
+}
+
+model Order {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  storeId         Int
+  totalAmount     Float
+  deliveryAddress String
+  pincode         String
+  phone           String
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  store Store @relation(fields: [storeId], references: [id])
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Float
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 }
