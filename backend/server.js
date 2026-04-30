@@ -27,18 +27,14 @@ const prisma = new PrismaClient({ adapter });
 
 // ================= RAZORPAY =================
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_dummy",
+  key_secret: process.env.RAZORPAY_KEY_SECRET || "dummy_secret",
 });
 
 // ================= MIDDLEWARE =================
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      process.env.FRONTEND_URL,
-    ].filter(Boolean),
+    origin: true,
     credentials: true,
   })
 );
@@ -47,7 +43,10 @@ app.use(express.json());
 
 // ================= HEALTH =================
 app.get("/", (req, res) => {
-  res.json({ message: "Backend working" });
+  res.json({
+    message: "Backend working",
+    status: "OK",
+  });
 });
 
 // ================= REGISTER =================
@@ -70,11 +69,19 @@ app.post("/api/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+      },
     });
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -91,7 +98,10 @@ app.post("/api/register", async (req, res) => {
     });
   } catch (e) {
     console.error("REGISTER ERROR:", e);
-    res.status(500).json({ message: "Registration failed" });
+    res.status(500).json({
+      message: "Registration failed",
+      error: e.message,
+    });
   }
 });
 
@@ -119,7 +129,11 @@ app.post("/api/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -136,7 +150,10 @@ app.post("/api/login", async (req, res) => {
     });
   } catch (e) {
     console.error("LOGIN ERROR:", e);
-    res.status(500).json({ message: "Login failed" });
+    res.status(500).json({
+      message: "Login failed",
+      error: e.message,
+    });
   }
 });
 
@@ -175,7 +192,10 @@ app.get("/api/stores", async (req, res) => {
     res.json({ stores });
   } catch (e) {
     console.error("STORES ERROR:", e);
-    res.status(500).json({ message: "Error fetching stores" });
+    res.status(500).json({
+      message: "Error fetching stores",
+      error: e.message,
+    });
   }
 });
 
@@ -202,7 +222,10 @@ app.get("/api/stores/:id", async (req, res) => {
     res.json({ store });
   } catch (e) {
     console.error("STORE DETAILS ERROR:", e);
-    res.status(500).json({ message: "Error fetching store" });
+    res.status(500).json({
+      message: "Error fetching store",
+      error: e.message,
+    });
   }
 });
 
@@ -249,7 +272,7 @@ app.post("/api/payment/create-order", async (req, res) => {
 
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       return res.status(500).json({
-        message: "Razorpay keys missing in .env",
+        message: "Razorpay keys missing in environment variables",
       });
     }
 
@@ -286,6 +309,12 @@ app.post("/api/payment/verify", async (req, res) => {
       return res.status(400).json({ message: "Missing payment details" });
     }
 
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({
+        message: "Razorpay secret missing in environment variables",
+      });
+    }
+
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
     const expectedSignature = crypto
@@ -303,7 +332,10 @@ app.post("/api/payment/verify", async (req, res) => {
     });
   } catch (err) {
     console.error("PAYMENT VERIFY ERROR:", err);
-    res.status(500).json({ message: "Verification failed" });
+    res.status(500).json({
+      message: "Verification failed",
+      error: err.message,
+    });
   }
 });
 
@@ -393,6 +425,7 @@ app.get("/api/orders/:userId", async (req, res) => {
     });
   }
 });
+
 // ================= ADMIN: GET ALL ORDERS =================
 app.get("/api/admin/orders", async (req, res) => {
   try {
@@ -439,6 +472,7 @@ app.patch("/api/admin/orders/:orderId/status", async (req, res) => {
       "OUT_FOR_DELIVERY",
       "DELIVERED",
       "CANCELLED",
+      "PAID",
     ];
 
     if (!allowedStatuses.includes(status)) {
@@ -475,6 +509,7 @@ app.patch("/api/admin/orders/:orderId/status", async (req, res) => {
     });
   }
 });
+
 // ================= DEV CREATE ADMIN =================
 app.get("/api/dev/create-admin", async (req, res) => {
   try {
@@ -485,7 +520,10 @@ app.get("/api/dev/create-admin", async (req, res) => {
     });
 
     if (exists) {
-      return res.json({ message: "Admin already exists", user: exists });
+      return res.json({
+        message: "Admin already exists",
+        user: exists,
+      });
     }
 
     const admin = await prisma.user.create({
@@ -497,12 +535,27 @@ app.get("/api/dev/create-admin", async (req, res) => {
       },
     });
 
-    res.json({ message: "Admin created", admin });
+    res.json({
+      message: "Admin created",
+      admin,
+    });
   } catch (error) {
     console.error("ADMIN CREATE ERROR:", error);
-    res.status(500).json({ message: "Admin creation failed" });
+    res.status(500).json({
+      message: "Admin creation failed",
+      error: error.message,
+    });
   }
 });
+
+// ================= 404 HANDLER =================
+app.use((req, res) => {
+  res.status(404).json({
+    message: "Route not found",
+    path: req.originalUrl,
+  });
+});
+
 // ================= START SERVER =================
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
