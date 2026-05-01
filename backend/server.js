@@ -53,6 +53,7 @@ app.get("/", (req, res) => {
     status: "OK",
   });
 });
+
 app.get("/api/debug-db", (req, res) => {
   res.json({
     DB_HOST: process.env.DB_HOST,
@@ -62,21 +63,32 @@ app.get("/api/debug-db", (req, res) => {
     hasPassword: !!process.env.DB_PASSWORD,
   });
 });
-// ================= REGISTER =================
+
+// ================= REGISTER WITH MOBILE =================
 app.post("/api/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, phone, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!name || !phone || !password) {
+      return res.status(400).json({
+        message: "Name, mobile number and password are required",
+      });
+    }
+
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({
+        message: "Enter valid 10 digit mobile number",
+      });
     }
 
     const exists = await prisma.user.findUnique({
-      where: { email },
+      where: { phone },
     });
 
     if (exists) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({
+        message: "Mobile number already registered",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -84,7 +96,7 @@ app.post("/api/register", async (req, res) => {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        phone,
         password: hashedPassword,
       },
     });
@@ -92,7 +104,7 @@ app.post("/api/register", async (req, res) => {
     const token = jwt.sign(
       {
         id: user.id,
-        email: user.email,
+        phone: user.phone,
         role: user.role,
       },
       JWT_SECRET,
@@ -105,7 +117,7 @@ app.post("/api/register", async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
+        phone: user.phone,
         role: user.role,
       },
     });
@@ -118,33 +130,39 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// ================= LOGIN =================
+// ================= LOGIN WITH MOBILE =================
 app.post("/api/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
+    if (!phone || !password) {
+      return res.status(400).json({
+        message: "Mobile number and password required",
+      });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { phone },
     });
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({
+        message: "Invalid mobile number or password",
+      });
     }
 
     const match = await bcrypt.compare(password, user.password);
 
     if (!match) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({
+        message: "Invalid mobile number or password",
+      });
     }
 
     const token = jwt.sign(
       {
         id: user.id,
-        email: user.email,
+        phone: user.phone,
         role: user.role,
       },
       JWT_SECRET,
@@ -157,7 +175,7 @@ app.post("/api/login", async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
+        phone: user.phone,
         role: user.role,
       },
     });
@@ -449,6 +467,7 @@ app.get("/api/admin/orders", async (req, res) => {
             id: true,
             name: true,
             email: true,
+            phone: true,
           },
         },
         store: true,
@@ -526,10 +545,10 @@ app.patch("/api/admin/orders/:orderId/status", async (req, res) => {
 // ================= DEV CREATE ADMIN =================
 app.get("/api/dev/create-admin", async (req, res) => {
   try {
-    const email = "admin@med.com";
+    const phone = "9999999999";
 
     const exists = await prisma.user.findUnique({
-      where: { email },
+      where: { phone },
     });
 
     if (exists) {
@@ -542,7 +561,8 @@ app.get("/api/dev/create-admin", async (req, res) => {
     const admin = await prisma.user.create({
       data: {
         name: "Admin",
-        email,
+        email: "admin@med.com",
+        phone,
         password: await bcrypt.hash("admin123", 10),
         role: "ADMIN",
       },
