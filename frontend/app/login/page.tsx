@@ -9,12 +9,17 @@ const API_BASE_URL =
 export default function Login() {
   const router = useRouter();
 
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
   const login = async () => {
-    if (!email || !password) {
-      alert("Please enter email and password");
+    if (!phone || !password) {
+      alert("Please enter mobile number and password");
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      alert("Enter valid 10 digit mobile number");
       return;
     }
 
@@ -24,7 +29,7 @@ export default function Login() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ phone, password }),
       });
 
       const data = await res.json();
@@ -50,16 +55,18 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
         <h2 className="mb-2 text-2xl font-bold text-gray-900">Login</h2>
+
         <p className="mb-5 text-sm text-gray-500">
-          Login to continue ordering medicines.
+          Login using your mobile number.
         </p>
 
         <input
-          type="email"
-          placeholder="Email"
+          type="tel"
+          placeholder="Mobile Number"
+          maxLength={10}
           className="mb-3 w-full rounded-xl border border-gray-300 p-3 text-black outline-none focus:border-green-600"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
         />
 
         <input

@@ -5,16 +5,22 @@ import { useRouter } from "next/navigation";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function Register() {
   const router = useRouter();
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
   const register = async () => {
-    if (!name || !email || !password) {
+    if (!name || !phone || !password) {
       alert("Please fill all fields");
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      alert("Enter valid 10 digit mobile number");
       return;
     }
 
@@ -24,7 +30,7 @@ export default function Register() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, phone, password }),
       });
 
       const data = await res.json();
@@ -48,8 +54,9 @@ export default function Register() {
         <h2 className="mb-2 text-2xl font-bold text-gray-900">
           Create Account
         </h2>
+
         <p className="mb-5 text-sm text-gray-500">
-          Register to start ordering medicines.
+          Register with your mobile number to start ordering medicines.
         </p>
 
         <input
@@ -61,11 +68,12 @@ export default function Register() {
         />
 
         <input
-          type="email"
-          placeholder="Email"
+          type="tel"
+          placeholder="Mobile Number"
+          maxLength={10}
           className="mb-3 w-full rounded-xl border border-gray-300 p-3 text-black outline-none focus:border-green-600"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
         />
 
         <input
