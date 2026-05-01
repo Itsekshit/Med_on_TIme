@@ -1,225 +1,342 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Clock, MapPin, User, LogOut, Wallet } from "lucide-react";
+import { Search, ShoppingCart, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-const statusColor = (status: string) => {
-  switch (status) {
-    case "DELIVERED":
-      return "bg-green-100 text-green-700";
-    case "OUT_FOR_DELIVERY":
-      return "bg-blue-100 text-blue-700";
-    case "ACCEPTED":
-      return "bg-yellow-100 text-yellow-700";
-    case "PENDING":
-      return "bg-gray-100 text-gray-700";
-    default:
-      return "bg-red-100 text-red-700";
-  }
-};
-
-export default function AccountPage() {
+export default function Home() {
   const router = useRouter();
 
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const [user, setUser] = useState<any>(null);
-  const [address, setAddress] = useState("");
   const [pincode, setPincode] = useState("");
-
-  const [totalOrders, setTotalOrders] = useState(0);
-  const [totalSpent, setTotalSpent] = useState(0);
+  const [stores, setStores] = useState<any[]>([]);
+  const [medicines, setMedicines] = useState<any[]>([]);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [isServiceable, setIsServiceable] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    const storedUser = localStorage.getItem("user");
-
-    if (!userId || !storedUser) {
-      router.push("/login");
-      return;
-    }
-
-    const parsedUser = JSON.parse(storedUser);
-    setUser(parsedUser);
-
-    const savedAddress = localStorage.getItem("savedAddress");
-    const savedPincode = localStorage.getItem("savedPincode");
-
-    if (savedAddress) setAddress(savedAddress);
-    if (savedPincode) setPincode(savedPincode);
-
-    fetch(`${API_BASE_URL}/api/orders/${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const ordersData = data.orders || [];
-        setOrders(ordersData);
-
-        setTotalOrders(ordersData.length);
-
-        const total = ordersData.reduce(
-          (sum: number, o: any) => sum + o.totalAmount,
-          0
-        );
-        setTotalSpent(total);
-      })
-      .finally(() => setLoading(false));
-  }, [router]);
-
-  const saveAddress = () => {
-    localStorage.setItem("savedAddress", address);
-    localStorage.setItem("savedPincode", pincode);
-    alert("Address saved ✅");
-  };
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) setUser(JSON.parse(savedUser));
+  }, []);
 
   const logout = () => {
     localStorage.clear();
-    router.push("/login");
+    setUser(null);
+    router.push("/");
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
+  const checkServiceability = async () => {
+    if (!pincode) return alert("Enter pincode");
+
+    setLoading(true);
+    setSearchText("");
+    setMedicines([]);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/serviceability/${pincode}`);
+      const data = await res.json();
+
+      if (!data.serviceable) {
+        setMessage("Not serviceable");
+        setStores([]);
+        setIsServiceable(false);
+        return;
+      }
+
+      setIsServiceable(true);
+      setMessage("Delivery available");
+
+      const storeRes = await fetch(
+        `${API_BASE_URL}/api/stores?pincode=${pincode}`
+      );
+      const storeData = await storeRes.json();
+
+      setStores(storeData.stores || []);
+    } catch {
+      setMessage("Server error");
+      setIsServiceable(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (value: string) => {
+    if (!isServiceable) {
+      alert("Please enter a serviceable pincode first");
+      return;
+    }
+
+    setSearchText(value);
+
+    if (!value.trim()) {
+      setMedicines([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/medicines?search=${encodeURIComponent(value)}`
+      );
+      const data = await res.json();
+
+      const nearbyMedicines = (data.medicines || []).filter(
+        (m: any) => m.store?.pincode === pincode
+      );
+
+      setMedicines(nearbyMedicines);
+    } catch {
+      setMedicines([]);
+    }
+  };
+
+  const filteredStores = stores.filter((store) =>
+    store.name.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-[#f7f8fc] px-6 py-10 space-y-8">
-      
-      {/* ================= PROFILE ================= */}
-      <div className="bg-white rounded-3xl shadow p-6">
-        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-          <User /> My Profile
-        </h2>
-
-        <p><b>Name:</b> {user?.name}</p>
-        <p><b>Mobile:</b> {user?.phone}</p>
-
-        {/* ADDRESS */}
-        <div className="mt-5">
-          <h3 className="font-bold mb-2">Saved Address</h3>
-
-          <input
-            placeholder="Full Address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="mb-3 w-full rounded-xl border p-3 text-black"
-          />
-
-          <input
-            placeholder="Pincode"
-            value={pincode}
-            onChange={(e) => setPincode(e.target.value)}
-            className="mb-3 w-full rounded-xl border p-3 text-black"
-          />
-
-          <button
-            onClick={saveAddress}
-            className="rounded-xl bg-green-600 px-4 py-2 text-white"
+    <div className="min-h-screen bg-[#fafafa]">
+      <header className="sticky top-0 z-50 bg-white shadow-sm">
+        <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+          <h1
+            className="text-2xl font-extrabold text-green-600 cursor-pointer"
+            onClick={() => router.push("/")}
           >
-            Save Address
-          </button>
-        </div>
+            MedOnTime
+          </h1>
 
-        <button
-          onClick={logout}
-          className="mt-5 flex items-center gap-2 text-red-500 font-bold"
+          <div className="hidden md:flex w-[400px]">
+            <div className="flex items-center w-full border rounded-full px-4 py-2 bg-gray-100">
+              <Search size={16} className="text-gray-500" />
+              <input
+                className="ml-2 w-full bg-transparent outline-none disabled:cursor-not-allowed"
+                placeholder={
+                  isServiceable
+                    ? "Search medicines or pharmacies..."
+                    : "Enter pincode first"
+                }
+                disabled={!isServiceable}
+                value={searchText}
+                onChange={(e) => handleSearch(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push("/cart")}
+              className="bg-black text-white px-4 py-2 rounded-xl flex gap-2 items-center"
+            >
+              <ShoppingCart size={16} />
+              Cart
+            </button>
+
+            {user ? (
+              <>
+                <button
+                  onClick={() => router.push("/account")}
+                  className="border px-4 py-2 rounded-xl"
+                >
+                  Hi {user.name}
+                </button>
+
+                <button
+                  onClick={logout}
+                  className="bg-red-500 text-white px-4 py-2 rounded-xl flex items-center gap-2"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => router.push("/login")}
+                  className="border px-4 py-2 rounded-xl"
+                >
+                  Login
+                </button>
+
+                <button
+                  onClick={() => router.push("/register")}
+                  className="bg-green-600 text-white px-4 py-2 rounded-xl"
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <section className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-10">
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+          <h2 className="text-5xl font-extrabold leading-tight">
+            Medicines delivered in{" "}
+            <span className="text-green-600">30 mins</span>
+          </h2>
+
+          <p className="text-gray-500 mt-4">
+            Order from nearby pharmacies instantly.
+          </p>
+
+          <div className="flex gap-3 mt-6">
+            <input
+              placeholder="Enter pincode"
+              value={pincode}
+              onChange={(e) => {
+                setPincode(e.target.value);
+                setIsServiceable(false);
+                setStores([]);
+                setMedicines([]);
+                setSearchText("");
+                setMessage("");
+              }}
+              className="border px-4 py-3 rounded-xl w-full"
+            />
+
+            <button
+              onClick={checkServiceability}
+              className="bg-green-600 text-white px-6 rounded-xl"
+            >
+              {loading ? "..." : "Check"}
+            </button>
+          </div>
+
+          {message && <p className="mt-3 text-sm">{message}</p>}
+        </motion.div>
+
+        <motion.div
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          className="bg-white rounded-3xl p-8 shadow-xl"
         >
-          <LogOut size={18} /> Logout
-        </button>
-      </div>
+          <h3 className="text-xl font-bold mb-4">Why MedOnTime?</h3>
 
-      {/* ================= SUMMARY ================= */}
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-3xl shadow text-center">
-          <h3 className="text-gray-500 text-sm">Total Orders</h3>
-          <p className="text-3xl font-extrabold">{totalOrders}</p>
-        </div>
+          <ul className="space-y-3 text-gray-600">
+            <li>⚡ 30 min delivery</li>
+            <li>🏥 Trusted pharmacies</li>
+            <li>💊 Genuine medicines</li>
+          </ul>
+        </motion.div>
+      </section>
 
-        <div className="bg-white p-6 rounded-3xl shadow text-center">
-          <h3 className="text-gray-500 text-sm">Total Spent</h3>
-          <p className="text-3xl font-extrabold text-green-600">
-            ₹{totalSpent}
-          </p>
-        </div>
+      {isServiceable && searchText && (
+        <section className="max-w-7xl mx-auto px-6 pb-10">
+          <h3 className="text-2xl font-bold mb-6">Search Results</h3>
 
-        <div className="bg-white p-6 rounded-3xl shadow text-center">
-          <h3 className="text-gray-500 text-sm flex justify-center gap-2">
-            <Wallet size={16} /> Payments
-          </h3>
-          <p className="text-3xl font-extrabold">
-            {totalOrders}
-          </p>
-        </div>
-      </div>
-
-      {/* ================= ORDERS ================= */}
-      <div>
-        <h1 className="text-3xl font-extrabold mb-6">Order History</h1>
-
-        {orders.length === 0 ? (
-          <p>No orders yet</p>
-        ) : (
-          <div className="space-y-6">
-            {orders.map((order, index) => (
-              <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-3xl shadow p-6"
-              >
-                <div className="flex justify-between mb-4">
-                  <div>
-                    <h2 className="font-bold">{order.store.name}</h2>
-                    <p className="text-sm text-gray-500 flex gap-2 items-center">
-                      <MapPin size={14} />
-                      {order.store.address}
-                    </p>
+          {medicines.length === 0 && filteredStores.length === 0 ? (
+            <div className="text-center text-gray-500 bg-white rounded-2xl p-8 shadow">
+              No results found
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6">
+              {medicines.map((medicine) => (
+                <motion.div
+                  key={`medicine-${medicine.id}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-3xl p-5 shadow hover:shadow-xl"
+                >
+                  <div className="h-28 bg-green-50 rounded-2xl mb-4 flex items-center justify-center text-4xl">
+                    💊
                   </div>
 
-                  <span
-                    className={`px-3 py-1 text-xs font-bold rounded-full ${statusColor(
-                      order.status
-                    )}`}
-                  >
-                    {order.status}
+                  <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                    Medicine
                   </span>
+
+                  <h4 className="font-bold text-lg mt-2">{medicine.name}</h4>
+                  <p className="text-sm text-gray-500">{medicine.description}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Store: {medicine.store?.name}
+                  </p>
+
+                  <div className="flex justify-between items-center mt-4">
+                    <span className="text-green-600 font-bold">
+                      ₹{medicine.price}
+                    </span>
+
+                    <button
+                      onClick={() => router.push(`/store/${medicine.store?.id}`)}
+                      className="bg-green-600 text-white px-4 py-2 rounded-xl"
+                    >
+                      View Store
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+
+              {filteredStores.map((store, i) => (
+                <motion.div
+                  key={`store-${store.id}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => router.push(`/store/${store.id}`)}
+                  className="bg-white rounded-3xl p-5 shadow hover:shadow-xl cursor-pointer"
+                >
+                  <div className="h-28 bg-gray-100 rounded-2xl mb-4 flex items-center justify-center text-4xl">
+                    🏥
+                  </div>
+
+                  <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                    Pharmacy
+                  </span>
+
+                  <h4 className="font-bold text-lg mt-2">{store.name}</h4>
+                  <p className="text-sm text-gray-500">{store.address}</p>
+
+                  <div className="flex justify-between mt-3 text-sm">
+                    <span>{store.deliveryTime} mins</span>
+                    <span className="text-green-600 font-bold">Open</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      <section className="max-w-7xl mx-auto px-6 pb-16">
+        <h3 className="text-2xl font-bold mb-6">Nearby Pharmacies</h3>
+
+        {stores.length === 0 ? (
+          <div className="text-center text-gray-500">
+            Enter pincode to view stores
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6">
+            {(searchText ? filteredStores : stores).map((store, i) => (
+              <motion.div
+                key={store.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                onClick={() => router.push(`/store/${store.id}`)}
+                className="bg-white rounded-3xl p-5 shadow hover:shadow-xl cursor-pointer"
+              >
+                <div className="h-32 bg-gray-100 rounded-2xl mb-4 flex items-center justify-center text-4xl">
+                  🏥
                 </div>
 
-                <div className="space-y-2 text-sm">
-                  {order.items.map((item: any) => (
-                    <div key={item.id} className="flex justify-between">
-                      <span>
-                        {item.product.name} × {item.quantity}
-                      </span>
-                      <span>₹{item.price * item.quantity}</span>
-                    </div>
-                  ))}
-                </div>
+                <h4 className="font-bold text-lg">{store.name}</h4>
+                <p className="text-sm text-gray-500">{store.address}</p>
 
-                <div className="mt-4 flex justify-between border-t pt-4">
-                  <span className="text-gray-500 flex gap-2 items-center">
-                    <Clock size={14} />
-                    {new Date(order.createdAt).toLocaleString()}
-                  </span>
-
-                  <span className="text-green-600 font-bold text-lg">
-                    ₹{order.totalAmount}
-                  </span>
+                <div className="flex justify-between mt-3 text-sm">
+                  <span>{store.deliveryTime} mins</span>
+                  <span className="text-green-600 font-bold">Open</span>
                 </div>
               </motion.div>
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
