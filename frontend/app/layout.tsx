@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import { Toaster } from "react-hot-toast";
+import PageWrapper from "./components/PageWrapper";
 
 export const metadata: Metadata = {
   title: "Med On Time",
@@ -17,7 +18,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-[#f7f8fc] text-[#111827]">
         <CartProvider>
-          {children}
+          {/* 🔥 PAGE TRANSITION */}
+          <PageWrapper>{children}</PageWrapper>
 
           {/* 🔥 GLOBAL TOAST */}
           <Toaster
