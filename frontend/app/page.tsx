@@ -35,6 +35,8 @@ export default function Home() {
     if (!pincode) return alert("Enter pincode");
 
     setLoading(true);
+    setSearchText("");
+    setMedicines([]);
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/serviceability/${pincode}`);
@@ -58,12 +60,18 @@ export default function Home() {
       setStores(storeData.stores || []);
     } catch {
       setMessage("Server error");
+      setIsServiceable(false);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = async (value: string) => {
+    if (!isServiceable) {
+      alert("Please enter a serviceable pincode first");
+      return;
+    }
+
     setSearchText(value);
 
     if (!value.trim()) {
@@ -76,7 +84,12 @@ export default function Home() {
         `${API_BASE_URL}/api/medicines?search=${encodeURIComponent(value)}`
       );
       const data = await res.json();
-      setMedicines(data.medicines || []);
+
+      const nearbyMedicines = (data.medicines || []).filter(
+        (m: any) => m.store?.pincode === pincode
+      );
+
+      setMedicines(nearbyMedicines);
     } catch {
       setMedicines([]);
     }
@@ -101,8 +114,13 @@ export default function Home() {
             <div className="flex items-center w-full border rounded-full px-4 py-2 bg-gray-100">
               <Search size={16} className="text-gray-500" />
               <input
-                className="ml-2 w-full bg-transparent outline-none"
-                placeholder="Search medicines or pharmacies..."
+                className="ml-2 w-full bg-transparent outline-none disabled:cursor-not-allowed"
+                placeholder={
+                  isServiceable
+                    ? "Search medicines or pharmacies..."
+                    : "Enter pincode first"
+                }
+                disabled={!isServiceable}
                 value={searchText}
                 onChange={(e) => handleSearch(e.target.value)}
               />
@@ -157,10 +175,7 @@ export default function Home() {
       </header>
 
       <section className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
           <h2 className="text-5xl font-extrabold leading-tight">
             Medicines delivered in{" "}
             <span className="text-green-600">30 mins</span>
@@ -174,7 +189,14 @@ export default function Home() {
             <input
               placeholder="Enter pincode"
               value={pincode}
-              onChange={(e) => setPincode(e.target.value)}
+              onChange={(e) => {
+                setPincode(e.target.value);
+                setIsServiceable(false);
+                setStores([]);
+                setMedicines([]);
+                setSearchText("");
+                setMessage("");
+              }}
               className="border px-4 py-3 rounded-xl w-full"
             />
 
@@ -204,7 +226,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {searchText && (
+      {isServiceable && searchText && (
         <section className="max-w-7xl mx-auto px-6 pb-10">
           <h3 className="text-2xl font-bold mb-6">Search Results</h3>
 
@@ -230,11 +252,7 @@ export default function Home() {
                   </span>
 
                   <h4 className="font-bold text-lg mt-2">{medicine.name}</h4>
-
-                  <p className="text-sm text-gray-500">
-                    {medicine.description}
-                  </p>
-
+                  <p className="text-sm text-gray-500">{medicine.description}</p>
                   <p className="text-sm text-gray-500 mt-1">
                     Store: {medicine.store?.name}
                   </p>
@@ -294,7 +312,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid md:grid-cols-3 gap-6">
-            {filteredStores.map((store, i) => (
+            {(searchText ? filteredStores : stores).map((store, i) => (
               <motion.div
                 key={store.id}
                 initial={{ opacity: 0, y: 30 }}
