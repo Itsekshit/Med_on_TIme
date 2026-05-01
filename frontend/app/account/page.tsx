@@ -96,6 +96,42 @@ export default function AccountPage() {
     alert("Address saved ✅");
   };
 
+  const cancelOrder = async (orderId: number) => {
+    const confirmCancel = confirm("Cancel this order?");
+    if (!confirmCancel) return;
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/admin/orders/${orderId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "CANCELLED" }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to cancel order");
+        return;
+      }
+
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId ? { ...order, status: "CANCELLED" } : order
+        )
+      );
+
+      alert("Order cancelled");
+    } catch (error) {
+      console.error(error);
+      alert("Cancel failed");
+    }
+  };
+
   const logout = () => {
     localStorage.clear();
     router.push("/login");
@@ -112,7 +148,6 @@ export default function AccountPage() {
   return (
     <div className="min-h-screen bg-[#f7f8fc] px-6 py-10">
       <div className="mx-auto max-w-6xl space-y-8">
-        {/* PROFILE */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -166,7 +201,6 @@ export default function AccountPage() {
           </div>
         </motion.div>
 
-        {/* SUMMARY */}
         <div className="grid gap-6 md:grid-cols-3">
           <motion.div
             initial={{ opacity: 0, y: 18 }}
@@ -202,7 +236,6 @@ export default function AccountPage() {
           </motion.div>
         </div>
 
-        {/* ORDERS */}
         <div>
           <h1 className="mb-6 text-3xl font-extrabold">Order Tracking</h1>
 
@@ -223,7 +256,6 @@ export default function AccountPage() {
                     transition={{ delay: index * 0.05 }}
                     className="rounded-3xl bg-white p-6 shadow"
                   >
-                    {/* HEADER */}
                     <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-start">
                       <div>
                         <h2 className="text-lg font-bold">
@@ -244,7 +276,6 @@ export default function AccountPage() {
                       </span>
                     </div>
 
-                    {/* TRACKING TIMELINE */}
                     {order.status === "CANCELLED" ? (
                       <div className="mb-6 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-600">
                         This order has been cancelled.
@@ -262,8 +293,14 @@ export default function AccountPage() {
                                 className="relative flex flex-col items-center text-center"
                               >
                                 {stepIndex < orderSteps.length - 1 && (
-                                  <div
-                                    className={`absolute left-1/2 top-5 h-1 w-full ${
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{
+                                      width:
+                                        stepIndex < activeIndex ? "100%" : "0%",
+                                    }}
+                                    transition={{ duration: 0.4 }}
+                                    className={`absolute left-1/2 top-5 h-1 ${
                                       stepIndex < activeIndex
                                         ? "bg-green-500"
                                         : "bg-gray-300"
@@ -273,7 +310,10 @@ export default function AccountPage() {
 
                                 <motion.div
                                   initial={{ scale: 0.8 }}
-                                  animate={{ scale: completed ? 1.08 : 1 }}
+                                  animate={{
+                                    scale: completed ? [1, 1.2, 1] : 1,
+                                  }}
+                                  transition={{ duration: 0.3 }}
                                   className={`z-10 flex h-10 w-10 items-center justify-center rounded-full ${
                                     completed
                                       ? "bg-green-600 text-white"
@@ -303,7 +343,16 @@ export default function AccountPage() {
                       </div>
                     )}
 
-                    {/* ITEMS */}
+                    {order.status !== "DELIVERED" &&
+                      order.status !== "CANCELLED" && (
+                        <button
+                          onClick={() => cancelOrder(order.id)}
+                          className="mb-4 rounded-xl bg-red-50 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-100"
+                        >
+                          Cancel Order
+                        </button>
+                      )}
+
                     <div className="space-y-2">
                       {order.items.map((item: any) => (
                         <div
@@ -318,7 +367,6 @@ export default function AccountPage() {
                       ))}
                     </div>
 
-                    {/* FOOTER */}
                     <div className="mt-4 flex flex-col justify-between gap-2 border-t pt-4 md:flex-row md:items-center">
                       <p className="flex items-center gap-2 text-sm text-gray-500">
                         <Clock size={14} />
