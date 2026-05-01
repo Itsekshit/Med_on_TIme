@@ -110,7 +110,8 @@ export default function Home() {
             MedOnTime
           </h1>
 
-          <div className="hidden md:flex w-[400px]">
+          {/* TOP DROPDOWN SEARCH */}
+          <div className="relative hidden md:flex w-[400px]">
             <div className="flex items-center w-full border rounded-full px-4 py-2 bg-gray-100">
               <Search size={16} className="text-gray-500" />
               <input
@@ -125,6 +126,60 @@ export default function Home() {
                 onChange={(e) => handleSearch(e.target.value)}
               />
             </div>
+
+            {isServiceable && searchText && (
+              <div className="absolute left-0 top-12 z-50 max-h-[420px] w-full overflow-y-auto rounded-2xl border bg-white p-2 shadow-xl">
+                {medicines.length === 0 && filteredStores.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-gray-500">
+                    No results found
+                  </p>
+                ) : (
+                  <>
+                    {medicines.map((medicine) => (
+                      <div
+                        key={`medicine-${medicine.id}`}
+                        onClick={() =>
+                          router.push(`/store/${medicine.store?.id}`)
+                        }
+                        className="flex cursor-pointer items-center gap-3 rounded-xl p-3 hover:bg-green-50"
+                      >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100">
+                          💊
+                        </div>
+
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold">
+                            {medicine.name}
+                          </h4>
+                          <p className="text-xs text-gray-500">
+                            {medicine.store?.name} • ₹{medicine.price}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+
+                    {filteredStores.map((store) => (
+                      <div
+                        key={`store-${store.id}`}
+                        onClick={() => router.push(`/store/${store.id}`)}
+                        className="flex cursor-pointer items-center gap-3 rounded-xl p-3 hover:bg-blue-50"
+                      >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                          🏥
+                        </div>
+
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold">{store.name}</h4>
+                          <p className="text-xs text-gray-500">
+                            {store.address} • {store.deliveryTime} mins
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3">
@@ -175,7 +230,10 @@ export default function Home() {
       </header>
 
       <section className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-10">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <h2 className="text-5xl font-extrabold leading-tight">
             Medicines delivered in{" "}
             <span className="text-green-600">30 mins</span>
@@ -225,83 +283,6 @@ export default function Home() {
           </ul>
         </motion.div>
       </section>
-
-      {isServiceable && searchText && (
-        <section className="max-w-7xl mx-auto px-6 pb-10">
-          <h3 className="text-2xl font-bold mb-6">Search Results</h3>
-
-          {medicines.length === 0 && filteredStores.length === 0 ? (
-            <div className="text-center text-gray-500 bg-white rounded-2xl p-8 shadow">
-              No results found
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-3 gap-6">
-              {medicines.map((medicine) => (
-                <motion.div
-                  key={`medicine-${medicine.id}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-3xl p-5 shadow hover:shadow-xl"
-                >
-                  <div className="h-28 bg-green-50 rounded-2xl mb-4 flex items-center justify-center text-4xl">
-                    💊
-                  </div>
-
-                  <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
-                    Medicine
-                  </span>
-
-                  <h4 className="font-bold text-lg mt-2">{medicine.name}</h4>
-                  <p className="text-sm text-gray-500">{medicine.description}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Store: {medicine.store?.name}
-                  </p>
-
-                  <div className="flex justify-between items-center mt-4">
-                    <span className="text-green-600 font-bold">
-                      ₹{medicine.price}
-                    </span>
-
-                    <button
-                      onClick={() => router.push(`/store/${medicine.store?.id}`)}
-                      className="bg-green-600 text-white px-4 py-2 rounded-xl"
-                    >
-                      View Store
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-
-              {filteredStores.map((store, i) => (
-                <motion.div
-                  key={`store-${store.id}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  onClick={() => router.push(`/store/${store.id}`)}
-                  className="bg-white rounded-3xl p-5 shadow hover:shadow-xl cursor-pointer"
-                >
-                  <div className="h-28 bg-gray-100 rounded-2xl mb-4 flex items-center justify-center text-4xl">
-                    🏥
-                  </div>
-
-                  <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                    Pharmacy
-                  </span>
-
-                  <h4 className="font-bold text-lg mt-2">{store.name}</h4>
-                  <p className="text-sm text-gray-500">{store.address}</p>
-
-                  <div className="flex justify-between mt-3 text-sm">
-                    <span>{store.deliveryTime} mins</span>
-                    <span className="text-green-600 font-bold">Open</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
 
       <section className="max-w-7xl mx-auto px-6 pb-16">
         <h3 className="text-2xl font-bold mb-6">Nearby Pharmacies</h3>
