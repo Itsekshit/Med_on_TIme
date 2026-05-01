@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Clock, MapPin, Package } from "lucide-react";
+import { Clock, MapPin, User, LogOut } from "lucide-react";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -25,22 +25,47 @@ const statusColor = (status: string) => {
 
 export default function AccountPage() {
   const router = useRouter();
+
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [user, setUser] = useState<any>(null);
+  const [address, setAddress] = useState("");
+  const [pincode, setPincode] = useState("");
+
   useEffect(() => {
     const userId = localStorage.getItem("userId");
+    const storedUser = localStorage.getItem("user");
 
-    if (!userId) {
+    if (!userId || !storedUser) {
       router.push("/login");
       return;
     }
+
+    setUser(JSON.parse(storedUser));
+
+    const savedAddress = localStorage.getItem("savedAddress");
+    const savedPincode = localStorage.getItem("savedPincode");
+
+    if (savedAddress) setAddress(savedAddress);
+    if (savedPincode) setPincode(savedPincode);
 
     fetch(`${API_BASE_URL}/api/orders/${userId}`)
       .then((res) => res.json())
       .then((data) => setOrders(data.orders || []))
       .finally(() => setLoading(false));
   }, [router]);
+
+  const saveAddress = () => {
+    localStorage.setItem("savedAddress", address);
+    localStorage.setItem("savedPincode", pincode);
+    alert("Address saved ✅");
+  };
+
+  const logout = () => {
+    localStorage.clear();
+    router.push("/login");
+  };
 
   if (loading) {
     return (
@@ -51,72 +76,124 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f8fc] px-6 py-10">
-      <h1 className="text-3xl font-extrabold mb-6">My Orders</h1>
+    <div className="min-h-screen bg-[#f7f8fc] px-6 py-10 space-y-8">
+      {/* ================= PROFILE ================= */}
+      <div className="bg-white rounded-3xl shadow p-6">
+        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+          <User /> My Profile
+        </h2>
 
-      {orders.length === 0 ? (
-        <p>No orders yet</p>
-      ) : (
-        <div className="space-y-6">
-          {orders.map((order, index) => (
-            <motion.div
-              key={order.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-3xl shadow p-6"
-            >
-              {/* HEADER */}
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h2 className="font-bold text-lg">
-                    {order.store.name}
-                  </h2>
-                  <p className="text-sm text-gray-500 flex gap-2 items-center">
-                    <MapPin size={14} />
-                    {order.store.address}
-                  </p>
+        <div className="space-y-3 text-sm">
+          <p>
+            <b>Name:</b> {user?.name}
+          </p>
+          <p>
+            <b>Mobile:</b> {user?.phone}
+          </p>
+        </div>
+
+        {/* ADDRESS */}
+        <div className="mt-5">
+          <h3 className="font-bold mb-2">Saved Address</h3>
+
+          <input
+            placeholder="Full Address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="mb-3 w-full rounded-xl border p-3 text-black"
+          />
+
+          <input
+            placeholder="Pincode"
+            value={pincode}
+            onChange={(e) => setPincode(e.target.value)}
+            className="mb-3 w-full rounded-xl border p-3 text-black"
+          />
+
+          <button
+            onClick={saveAddress}
+            className="rounded-xl bg-green-600 px-4 py-2 text-white"
+          >
+            Save Address
+          </button>
+        </div>
+
+        <button
+          onClick={logout}
+          className="mt-5 flex items-center gap-2 text-red-500 font-bold"
+        >
+          <LogOut size={18} /> Logout
+        </button>
+      </div>
+
+      {/* ================= ORDERS ================= */}
+      <div>
+        <h1 className="text-3xl font-extrabold mb-6">My Orders</h1>
+
+        {orders.length === 0 ? (
+          <p>No orders yet</p>
+        ) : (
+          <div className="space-y-6">
+            {orders.map((order, index) => (
+              <motion.div
+                key={order.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white rounded-3xl shadow p-6"
+              >
+                {/* HEADER */}
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h2 className="font-bold text-lg">
+                      {order.store.name}
+                    </h2>
+                    <p className="text-sm text-gray-500 flex gap-2 items-center">
+                      <MapPin size={14} />
+                      {order.store.address}
+                    </p>
+                  </div>
+
+                  <span
+                    className={`px-3 py-1 text-xs font-bold rounded-full ${statusColor(
+                      order.status
+                    )}`}
+                  >
+                    {order.status}
+                  </span>
                 </div>
 
-                <span
-                  className={`px-3 py-1 text-xs font-bold rounded-full ${statusColor(
-                    order.status
-                  )}`}
-                >
-                  {order.status}
-                </span>
-              </div>
+                {/* ITEMS */}
+                <div className="space-y-2">
+                  {order.items.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="flex justify-between text-sm"
+                    >
+                      <span>
+                        {item.product.name} × {item.quantity}
+                      </span>
+                      <span>₹{item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
 
-              {/* ITEMS */}
-              <div className="space-y-2">
-                {order.items.map((item: any) => (
-                  <div
-                    key={item.id}
-                    className="flex justify-between text-sm"
-                  >
-                    <span>
-                      {item.product.name} × {item.quantity}
-                    </span>
-                    <span>₹{item.price * item.quantity}</span>
-                  </div>
-                ))}
-              </div>
+                {/* FOOTER */}
+                <div className="mt-4 flex justify-between items-center border-t pt-4">
+                  <p className="text-sm text-gray-500 flex items-center gap-2">
+                    <Clock size={14} />
+                    {new Date(order.createdAt).toLocaleString()}
+                  </p>
 
-              {/* FOOTER */}
-              <div className="mt-4 flex justify-between items-center border-t pt-4">
-                <p className="text-sm text-gray-500 flex items-center gap-2">
-                  <Clock size={14} />
-                  {new Date(order.createdAt).toLocaleString()}
-                </p>
-
-                <p className="text-lg font-extrabold text-green-600">
-                  ₹{order.totalAmount}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+                  <p className="text-lg font-extrabold text-green-600">
+                    ₹{order.totalAmount}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

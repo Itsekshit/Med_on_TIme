@@ -2,7 +2,7 @@
 
 import { useCart } from "@/app/context/CartContext";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -32,6 +32,25 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [placing, setPlacing] = useState(false);
 
+  useEffect(() => {
+    const savedAddress = localStorage.getItem("savedAddress");
+    const savedPincode = localStorage.getItem("savedPincode");
+    const savedUser = localStorage.getItem("user");
+
+    if (savedAddress) setAddress(savedAddress);
+    if (savedPincode) setPincode(savedPincode);
+
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      if (user?.phone) setPhone(user.phone);
+    }
+  }, []);
+
+  const saveAddressLocally = () => {
+    localStorage.setItem("savedAddress", address);
+    localStorage.setItem("savedPincode", pincode);
+  };
+
   const placeOrder = async () => {
     const userId = localStorage.getItem("userId");
 
@@ -54,6 +73,7 @@ export default function CheckoutPage() {
 
     try {
       setPlacing(true);
+      saveAddressLocally();
 
       const scriptLoaded = await loadRazorpayScript();
 
@@ -157,7 +177,10 @@ export default function CheckoutPage() {
 
         <div className="grid gap-6 md:grid-cols-[1fr_320px]">
           <div className="rounded-3xl bg-white p-6 shadow">
-            <h2 className="mb-4 text-xl font-bold">Delivery Details</h2>
+            <h2 className="mb-2 text-xl font-bold">Delivery Details</h2>
+            <p className="mb-4 text-sm text-gray-500">
+              Your saved address and mobile number will auto-fill here.
+            </p>
 
             <input
               placeholder="Full Address"
@@ -175,15 +198,23 @@ export default function CheckoutPage() {
 
             <input
               placeholder="Phone Number"
+              maxLength={10}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
               className="mb-3 w-full rounded-xl border p-3 text-black outline-none"
             />
 
             <button
+              onClick={saveAddressLocally}
+              className="mb-3 w-full rounded-xl border border-green-600 py-3 font-bold text-green-600 hover:bg-green-50"
+            >
+              Save Address
+            </button>
+
+            <button
               onClick={placeOrder}
               disabled={placing}
-              className="mt-3 w-full rounded-xl bg-green-600 py-3 font-bold text-white hover:bg-green-700 disabled:bg-green-400"
+              className="w-full rounded-xl bg-green-600 py-3 font-bold text-white hover:bg-green-700 disabled:bg-green-400"
             >
               {placing ? "Processing Payment..." : "Pay & Place Order"}
             </button>
