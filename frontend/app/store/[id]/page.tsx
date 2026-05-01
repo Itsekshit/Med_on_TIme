@@ -2,9 +2,16 @@
 
 import { useCart } from "@/app/context/CartContext";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, MapPin, ShoppingCart } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  MapPin,
+  Search,
+  ShoppingCart,
+  Star,
+} from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 type Product = {
@@ -31,13 +38,12 @@ const getImageByCategory = (category: string) => {
 
   if (c.includes("fever"))
     return "https://cdn-icons-png.flaticon.com/512/2966/2966484.png";
-
   if (c.includes("vitamin"))
     return "https://cdn-icons-png.flaticon.com/512/2921/2921822.png";
-
   if (c.includes("baby"))
     return "https://cdn-icons-png.flaticon.com/512/3043/3043899.png";
-
+  if (c.includes("cold") || c.includes("cough"))
+    return "https://cdn-icons-png.flaticon.com/512/2785/2785819.png";
   if (c.includes("health"))
     return "https://cdn-icons-png.flaticon.com/512/3209/3209265.png";
 
@@ -54,6 +60,8 @@ export default function StorePage() {
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [addedId, setAddedId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
     if (!id) return;
@@ -61,12 +69,9 @@ export default function StorePage() {
     const fetchStore = async () => {
       try {
         setLoading(true);
-
         const res = await fetch(`${API_BASE_URL}/api/stores/${String(id)}`);
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch store");
-        }
+        if (!res.ok) throw new Error("Failed to fetch store");
 
         const data = await res.json();
         setStore(data.store);
@@ -81,6 +86,26 @@ export default function StorePage() {
     fetchStore();
   }, [id]);
 
+  const categories = useMemo(() => {
+    if (!store) return ["All"];
+    return ["All", ...Array.from(new Set(store.products.map((p) => p.category)))];
+  }, [store]);
+
+  const filteredProducts = useMemo(() => {
+    if (!store) return [];
+
+    return store.products.filter((product) => {
+      const matchesSearch = product.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+      const matchesCategory =
+        selectedCategory === "All" || product.category === selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [store, search, selectedCategory]);
+
   const handleAddToCart = (product: Product) => {
     if (!store) return;
 
@@ -93,7 +118,6 @@ export default function StorePage() {
     });
 
     toast.success(`${product.name} added to cart 🛒`);
-
     setAddedId(product.id);
     setTimeout(() => setAddedId(null), 800);
   };
@@ -108,7 +132,7 @@ export default function StorePage() {
 
   if (!store) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f7f8fc] gap-4">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f7f8fc]">
         <p className="text-gray-500">Store not found</p>
         <button
           onClick={() => router.push("/")}
@@ -153,66 +177,103 @@ export default function StorePage() {
               🏥
             </div>
 
-            <h1 className="text-3xl font-extrabold">{store.name}</h1>
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div>
+                <h1 className="text-3xl font-extrabold">{store.name}</h1>
 
-            <div className="mt-3 flex flex-col gap-2 text-gray-600 md:flex-row md:gap-6">
-              <p className="flex items-center gap-2">
-                <MapPin size={18} className="text-green-600" />
-                {store.address}
-              </p>
+                <div className="mt-3 flex flex-col gap-2 text-gray-600 md:flex-row md:gap-6">
+                  <p className="flex items-center gap-2">
+                    <MapPin size={18} className="text-green-600" />
+                    {store.address}
+                  </p>
 
-              <p className="flex items-center gap-2 text-green-600">
-                <Clock size={18} />
-                {store.deliveryTime} mins
-              </p>
+                  <p className="flex items-center gap-2 text-green-600">
+                    <Clock size={18} />
+                    {store.deliveryTime} mins
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-full bg-green-100 px-4 py-2 text-sm font-bold text-green-700">
+                <Star size={16} fill="currentColor" />
+                4.5 Trusted Pharmacy
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
 
       <main className="mx-auto max-w-7xl px-6 py-10">
-        <h2 className="mb-6 text-2xl font-bold">Available Medicines</h2>
+        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <h2 className="text-2xl font-bold">Available Medicines</h2>
 
-        {store.products.length === 0 ? (
-          <div className="rounded-xl border p-10 text-center text-gray-500">
-            No products available.
+          <div className="flex items-center rounded-2xl border bg-white px-4 py-3 shadow-sm md:w-[360px]">
+            <Search size={18} className="text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search medicine..."
+              className="ml-2 w-full outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="mb-8 flex gap-3 overflow-x-auto pb-2">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`whitespace-nowrap rounded-full px-5 py-2 text-sm font-semibold transition ${
+                selectedCategory === category
+                  ? "bg-green-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-green-50"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        {filteredProducts.length === 0 ? (
+          <div className="rounded-xl border bg-white p-10 text-center text-gray-500">
+            No products found.
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {store.products.map((product, index) => (
+            {filteredProducts.map((product, index) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="rounded-3xl bg-white p-5 shadow transition hover:shadow-lg"
+                className="rounded-3xl bg-white p-5 shadow transition hover:-translate-y-1 hover:shadow-xl"
               >
-                <div className="mb-4 flex h-32 items-center justify-center rounded-xl bg-white">
+                <div className="mb-4 flex h-36 items-center justify-center rounded-2xl bg-gradient-to-br from-green-50 to-blue-50">
                   <img
                     src={getImageByCategory(product.category)}
                     alt={product.name}
-                    className="h-20 w-20 object-contain transition hover:scale-110"
+                    className="h-24 w-24 object-contain transition hover:scale-110"
                   />
                 </div>
 
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700">
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
                   {product.category}
                 </span>
 
-                <h3 className="mt-2 text-lg font-bold">{product.name}</h3>
+                <h3 className="mt-3 text-lg font-bold">{product.name}</h3>
 
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 min-h-[40px] text-sm text-gray-500">
                   {product.description}
                 </p>
 
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-5 flex items-center justify-between">
                   <span className="text-xl font-bold text-green-600">
                     ₹{product.price}
                   </span>
 
                   <button
                     onClick={() => handleAddToCart(product)}
-                    className="rounded-xl bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+                    className="rounded-xl bg-green-600 px-5 py-2 font-semibold text-white hover:bg-green-700"
                   >
                     {addedId === product.id ? "Added ✓" : "Add"}
                   </button>
