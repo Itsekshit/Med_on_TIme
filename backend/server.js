@@ -188,6 +188,68 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// ================= OTP LOGIN DEMO =================
+app.post("/api/auth/send-otp", async (req, res) => {
+  const { phone } = req.body;
+
+  if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
+    return res.status(400).json({ message: "Enter valid mobile number" });
+  }
+
+  res.json({
+    message: "OTP sent successfully",
+    otp: "123456",
+  });
+});
+
+app.post("/api/auth/verify-otp", async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({ message: "Phone and OTP required" });
+    }
+
+    if (otp !== "123456") {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    let user = await prisma.user.findUnique({
+      where: { phone },
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: `User ${phone.slice(-4)}`,
+          phone,
+          password: await bcrypt.hash("otp_login_user", 10),
+        },
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, phone: user.phone, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "OTP verified",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("OTP VERIFY ERROR:", error);
+    res.status(500).json({ message: "OTP login failed" });
+  }
+});
+
 // ================= SERVICEABILITY =================
 app.get("/api/serviceability/:pincode", (req, res) => {
   const { pincode } = req.params;
@@ -373,8 +435,16 @@ app.post("/api/payment/verify", async (req, res) => {
 // ================= CREATE ORDER =================
 app.post("/api/orders", async (req, res) => {
   try {
-    const { userId, storeId, items, totalAmount, address, pincode, phone } =
-      req.body;
+    const {
+      userId,
+      storeId,
+      items,
+      totalAmount,
+      address,
+      pincode,
+      phone,
+      paymentMethod,
+    } = req.body;
 
     if (!userId || !storeId || !items?.length || !address) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -388,7 +458,10 @@ app.post("/api/orders", async (req, res) => {
         deliveryAddress: String(address),
         pincode: String(pincode || ""),
         phone: String(phone || ""),
-        status: "PAID",
+
+        // ✅ COD = PENDING, Online = PAID
+        status: paymentMethod === "COD" ? "PENDING" : "PAID",
+
         items: {
           create: items.map((item) => ({
             productId: Number(item.id),
@@ -408,7 +481,10 @@ app.post("/api/orders", async (req, res) => {
     });
 
     res.json({
-      message: "Order placed successfully",
+      message:
+        paymentMethod === "COD"
+          ? "Order placed successfully with Cash on Delivery"
+          : "Order placed successfully",
       order,
     });
   } catch (e) {
@@ -580,67 +656,7 @@ app.get("/api/dev/create-admin", async (req, res) => {
     });
   }
 });
-// ================= OTP LOGIN DEMO =================
-app.post("/api/auth/send-otp", async (req, res) => {
-  const { phone } = req.body;
 
-  if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
-    return res.status(400).json({ message: "Enter valid mobile number" });
-  }
-
-  res.json({
-    message: "OTP sent successfully",
-    otp: "123456",
-  });
-});
-
-app.post("/api/auth/verify-otp", async (req, res) => {
-  try {
-    const { phone, otp } = req.body;
-
-    if (!phone || !otp) {
-      return res.status(400).json({ message: "Phone and OTP required" });
-    }
-
-    if (otp !== "123456") {
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
-
-    let user = await prisma.user.findUnique({
-      where: { phone },
-    });
-
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: `User ${phone.slice(-4)}`,
-          phone,
-          password: await bcrypt.hash("otp_login_user", 10),
-        },
-      });
-    }
-
-    const token = jwt.sign(
-      { id: user.id, phone: user.phone, role: user.role },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.json({
-      message: "OTP verified",
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        phone: user.phone,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error("OTP VERIFY ERROR:", error);
-    res.status(500).json({ message: "OTP login failed" });
-  }
-});
 // ================= 404 HANDLER =================
 app.use((req, res) => {
   res.status(404).json({
