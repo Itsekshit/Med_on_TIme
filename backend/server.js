@@ -53,7 +53,15 @@ app.get("/", (req, res) => {
     status: "OK",
   });
 });
-
+app.get("/api/debug-db", (req, res) => {
+  res.json({
+    DB_HOST: process.env.DB_HOST,
+    DB_PORT: process.env.DB_PORT,
+    DB_USER: process.env.DB_USER,
+    DB_NAME: process.env.DB_NAME,
+    hasPassword: !!process.env.DB_PASSWORD,
+  });
+});
 // ================= REGISTER =================
 app.post("/api/register", async (req, res) => {
   try {
