@@ -26,7 +26,6 @@ type Store = {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// ✅ IMAGE FUNCTION
 const getImageByCategory = (category: string) => {
   const c = category?.toLowerCase();
 
@@ -46,7 +45,9 @@ const getImageByCategory = (category: string) => {
 };
 
 export default function StorePage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
   const router = useRouter();
   const { addToCart, totalItems } = useCart();
 
@@ -59,13 +60,19 @@ export default function StorePage() {
 
     const fetchStore = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/stores/${id}`);
-        if (!res.ok) throw new Error("Failed to fetch store");
+        setLoading(true);
+
+        const res = await fetch(`${API_BASE_URL}/api/stores/${String(id)}`);
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch store");
+        }
 
         const data = await res.json();
         setStore(data.store);
       } catch (error) {
-        console.error(error);
+        console.error("STORE FETCH ERROR:", error);
+        setStore(null);
       } finally {
         setLoading(false);
       }
@@ -101,15 +108,20 @@ export default function StorePage() {
 
   if (!store) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f7f8fc]">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f7f8fc] gap-4">
         <p className="text-gray-500">Store not found</p>
+        <button
+          onClick={() => router.push("/")}
+          className="rounded-xl bg-green-600 px-5 py-2 text-white"
+        >
+          Go Home
+        </button>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-[#111827]">
-      {/* HEADER */}
       <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <button
@@ -130,7 +142,6 @@ export default function StorePage() {
         </div>
       </header>
 
-      {/* STORE INFO */}
       <section className="bg-gradient-to-br from-green-50 via-white to-blue-50">
         <div className="mx-auto max-w-7xl px-6 py-10">
           <motion.div
@@ -159,7 +170,6 @@ export default function StorePage() {
         </div>
       </section>
 
-      {/* PRODUCTS */}
       <main className="mx-auto max-w-7xl px-6 py-10">
         <h2 className="mb-6 text-2xl font-bold">Available Medicines</h2>
 
@@ -175,36 +185,34 @@ export default function StorePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="rounded-3xl bg-white p-5 shadow hover:shadow-lg transition"
+                className="rounded-3xl bg-white p-5 shadow transition hover:shadow-lg"
               >
-                {/* IMAGE */}
-                <div className="mb-4 h-32 flex items-center justify-center rounded-xl bg-white">
+                <div className="mb-4 flex h-32 items-center justify-center rounded-xl bg-white">
                   <img
                     src={getImageByCategory(product.category)}
                     alt={product.name}
-                    className="h-20 w-20 object-contain hover:scale-110 transition"
+                    className="h-20 w-20 object-contain transition hover:scale-110"
                   />
                 </div>
 
-                {/* CATEGORY */}
-                <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700">
                   {product.category}
                 </span>
 
                 <h3 className="mt-2 text-lg font-bold">{product.name}</h3>
 
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="mt-1 text-sm text-gray-500">
                   {product.description}
                 </p>
 
-                <div className="mt-4 flex justify-between items-center">
+                <div className="mt-4 flex items-center justify-between">
                   <span className="text-xl font-bold text-green-600">
                     ₹{product.price}
                   </span>
 
                   <button
                     onClick={() => handleAddToCart(product)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700"
+                    className="rounded-xl bg-green-600 px-4 py-2 text-white hover:bg-green-700"
                   >
                     {addedId === product.id ? "Added ✓" : "Add"}
                   </button>
