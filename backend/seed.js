@@ -28,53 +28,43 @@ async function main() {
   const stores = [
     {
       name: "Apollo Pharmacy",
-      image:
-        "https://images.unsplash.com/photo-1580281657527-47e8d1cfa5c7",
+      image: "https://images.pexels.com/photos/3683074/pexels-photo-3683074.jpeg",
     },
     {
       name: "MedPlus Pharmacy",
-      image:
-        "https://images.unsplash.com/photo-1576602976047-174e57a47881",
+      image: "https://images.pexels.com/photos/4047186/pexels-photo-4047186.jpeg",
     },
     {
       name: "Wellness Forever",
-      image:
-        "https://images.unsplash.com/photo-1587854692152-cbe660dbde88",
+      image: "https://images.pexels.com/photos/3683107/pexels-photo-3683107.jpeg",
     },
     {
       name: "Guardian Pharmacy",
-      image:
-        "https://images.unsplash.com/photo-1629909613654-28e377c37b09",
+      image: "https://images.pexels.com/photos/3845766/pexels-photo-3845766.jpeg",
     },
     {
       name: "Netmeds Store",
-      image:
-        "https://images.unsplash.com/photo-1471864190281-a93a3070b6de",
+      image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg",
     },
     {
       name: "HealthCare Medical",
-      image:
-        "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d",
+      image: "https://images.pexels.com/photos/7088526/pexels-photo-7088526.jpeg",
     },
     {
       name: "LifeCare Pharmacy",
-      image:
-        "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d",
+      image: "https://images.pexels.com/photos/5938358/pexels-photo-5938358.jpeg",
     },
     {
       name: "CityMed Store",
-      image:
-        "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7",
+      image: "https://images.pexels.com/photos/3786157/pexels-photo-3786157.jpeg",
     },
     {
       name: "CarePlus Pharmacy",
-      image:
-        "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5",
+      image: "https://images.pexels.com/photos/3683098/pexels-photo-3683098.jpeg",
     },
     {
       name: "24x7 Medical Store",
-      image:
-        "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae",
+      image: "https://images.pexels.com/photos/4226264/pexels-photo-4226264.jpeg",
     },
   ];
 
