@@ -19,7 +19,7 @@ export default function StoreList({ location }: StoreListProps) {
       time: "20 min",
       status: "Open",
       image:
-        "https://images.pexels.com/photos/3683074/pexels-photo-3683074.jpeg?auto=compress&cs=tinysrgb&w=800",
+        "https://images.pexels.com/photos/3683074/pexels-photo-3683074.jpeg",
     },
     {
       id: 2,
@@ -29,7 +29,7 @@ export default function StoreList({ location }: StoreListProps) {
       time: "25 min",
       status: "Open",
       image:
-        "https://images.pexels.com/photos/4047186/pexels-photo-4047186.jpeg?auto=compress&cs=tinysrgb&w=800",
+        "https://images.pexels.com/photos/4047186/pexels-photo-4047186.jpeg",
     },
     {
       id: 3,
@@ -39,7 +39,7 @@ export default function StoreList({ location }: StoreListProps) {
       time: "18 min",
       status: "Open",
       image:
-        "https://images.pexels.com/photos/3683107/pexels-photo-3683107.jpeg?auto=compress&cs=tinysrgb&w=800",
+        "https://images.pexels.com/photos/3683107/pexels-photo-3683107.jpeg",
     },
     {
       id: 4,
@@ -49,38 +49,30 @@ export default function StoreList({ location }: StoreListProps) {
       time: "30 min",
       status: "Closed",
       image:
-        "https://images.pexels.com/photos/3845766/pexels-photo-3845766.jpeg?auto=compress&cs=tinysrgb&w=800",
+        "https://images.pexels.com/photos/3845766/pexels-photo-3845766.jpeg",
     },
   ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {stores.map((store, index) => (
+      {stores.map((store) => (
         <div
           key={store.id}
           className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition overflow-hidden border"
         >
-          {/* 🔥 IMAGE SECTION */}
-          <div className="relative h-44 overflow-hidden">
+          <div className="relative h-44 overflow-hidden bg-gray-100">
             <img
-              src={
-                store.image ||
-                [
-                  "https://images.pexels.com/photos/3683074/pexels-photo-3683074.jpeg?auto=compress&cs=tinysrgb&w=800",
-                  "https://images.pexels.com/photos/4047186/pexels-photo-4047186.jpeg?auto=compress&cs=tinysrgb&w=800",
-                  "https://images.pexels.com/photos/3683107/pexels-photo-3683107.jpeg?auto=compress&cs=tinysrgb&w=800",
-                  "https://images.pexels.com/photos/3845766/pexels-photo-3845766.jpeg?auto=compress&cs=tinysrgb&w=800",
-                ][index % 4]
-              }
+              src={store.image}
               alt={store.name}
+              onError={(e) => {
+                e.currentTarget.src = "/default-pharmacy.jpg";
+              }}
               className="w-full h-full object-cover hover:scale-105 transition duration-500"
             />
 
-            {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
-            {/* Name + Status */}
-            <div className="absolute bottom-3 left-4 right-4 flex justify-between items-end">
+            <div className="absolute bottom-3 left-4 right-4 flex justify-between items-end gap-3">
               <h3 className="text-lg font-bold text-white drop-shadow">
                 {store.name}
               </h3>
@@ -97,7 +89,6 @@ export default function StoreList({ location }: StoreListProps) {
             </div>
           </div>
 
-          {/* 🔥 DETAILS */}
           <div className="p-5">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600 flex gap-4">
