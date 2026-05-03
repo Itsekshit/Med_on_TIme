@@ -356,7 +356,20 @@ export default function Home() {
               >
                 <div className="relative h-36 rounded-2xl mb-4 overflow-hidden bg-green-50">
                   <img
-                    src={`https://source.unsplash.com/400x250/?pharmacy,medical,store&sig=${store.id}`}
+                    src={
+  [
+    "https://images.pexels.com/photos/3683074/pexels-photo-3683074.jpeg",
+    "https://images.pexels.com/photos/4047186/pexels-photo-4047186.jpeg",
+    "https://images.pexels.com/photos/3683107/pexels-photo-3683107.jpeg",
+    "https://images.pexels.com/photos/3845766/pexels-photo-3845766.jpeg",
+    "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg",
+    "https://images.pexels.com/photos/7088526/pexels-photo-7088526.jpeg",
+    "https://images.pexels.com/photos/5938358/pexels-photo-5938358.jpeg",
+    "https://images.pexels.com/photos/3786157/pexels-photo-3786157.jpeg",
+    "https://images.pexels.com/photos/3683098/pexels-photo-3683098.jpeg",
+    "https://images.pexels.com/photos/4226264/pexels-photo-4226264.jpeg",
+  ][i % 10]
+}
                     alt={store.name}
                     className="h-full w-full object-cover transition duration-300 hover:scale-105"
                   />
